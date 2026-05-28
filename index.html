@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>日程手账</title>
+<style>
+/* ===== Fonts ===== */
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;600;700;900&family=Noto+Sans+SC:wght@300;400;500;700&display=swap');
+
+/* ===== Design Tokens ===== */
+:root {
+  --paper: #FAF5EB;
+  --card: #FFFDF7;
+  --card-hover: #FFF9ED;
+  --text: #3D2C2C;
+  --text-secondary: #8B7355;
+  --text-muted: #B8A899;
+  --border: #E8DDD0;
+  --border-dark: #D4C4AE;
+  --accent: #2C3E50;
+  --accent-light: #F0EBE3;
+  --cta: #C0392B;
+  --cta-hover: #A93226;
+
+  --priority-high: #C0392B;
+  --priority-high-bg: #FDF0ED;
+  --priority-medium: #B8860B;
+  --priority-medium-bg: #FDF8ED;
+  --priority-low: #5D7A4A;
+  --priority-low-bg: #F2F6EE;
+
+  --completed: #B8A899;
+  --completed-bg: #F5F1EB;
+  --strikethrough: #C8A896;
+
+  --shadow-xs: 0 1px 1px rgba(61,44,44,0.04);
+  --shadow-sm: 0 2px 3px rgba(61,44,44,0.05);
+  --shadow: 0 3px 5px rgba(61,44,44,0.06);
+  --shadow-md: 0 1px 0 rgba(61,44,44,0.06), 0 3px 0 rgba(61,44,44,0.03);
+  --radius: 4px;
+  --radius-lg: 6px;
+
+  --font-song: 'Noto Serif SC', 'STSong', 'SimSun', 'Songti SC', serif;
+  --font-sans: 'Noto Sans SC', -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  --transition: 0.15s ease;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: var(--font-sans);
+  background: var(--paper);
+  background-image:
+    repeating-linear-gradient(0deg, transparent, transparent 31px, rgba(180,160,140,0.08) 31px, rgba(180,160,140,0.08) 32px);
+  color: var(--text);
+  min-height: 100vh;
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
+
+.app { max-width: 620px; margin: 0 auto; padding: 32px 20px 60px; }
+
+/* ===== Header —— 封面式标题 ===== */
+.header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 24px; flex-wrap: wrap; gap: 12px;
+}
+.header h1 {
+  font-family: var(--font-song); font-size: 28px; font-weight: 900;
+  color: var(--text); letter-spacing: 3px;
+}
+.header h1 .dot {
+  display: inline-block; width: 8px; height: 8px; background: var(--cta);
+  border-radius: 50%; margin-right: 8px; vertical-align: middle;
+}
+.header-right { display: flex; align-items: center; gap: 8px; }
+
+/* ===== View Toggle —— 标签页风格 ===== */
+.view-toggle {
+  display: flex; background: transparent; border-radius: 0; padding: 0;
+  border: none; gap: 0;
+}
+.view-toggle button {
+  padding: 6px 18px; border: 1px solid var(--border-dark); background: var(--card);
+  cursor: pointer; font-family: var(--font-sans); font-size: 13px; font-weight: 500;
+  color: var(--text-secondary); transition: all var(--transition);
+  margin-left: -1px;
+}
+.view-toggle button:first-child { margin-left: 0; border-radius: var(--radius) 0 0 var(--radius); }
+.view-toggle button:last-child { border-radius: 0 var(--radius) var(--radius) 0; }
+.view-toggle button.active { background: var(--text); color: var(--card); border-color: var(--text); z-index: 1; }
+.view-toggle button:not(.active):hover { background: var(--card-hover); color: var(--text); }
+
+/* ===== Date Nav ===== */
+.date-nav { display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 20px; }
+.date-nav button {
+  width: 36px; height: 36px; border: 1px solid var(--border-dark); border-radius: var(--radius);
+  background: var(--card); cursor: pointer; font-family: var(--font-sans); font-size: 14px;
+  display: flex; align-items: center; justify-content: center;
+  transition: all var(--transition); color: var(--text-secondary);
+}
+.date-nav button:hover { background: var(--card-hover); border-color: var(--text); color: var(--text); }
+.date-nav .today-btn { width: auto; padding: 0 16px; font-size: 13px; font-weight: 600; }
+.date-display {
+  font-family: var(--font-song); font-size: 17px; font-weight: 700;
+  min-width: 180px; text-align: center; color: var(--text);
+}
+
+/* ===== Stats ===== */
+.stats {
+  display: flex; justify-content: center; gap: 24px; margin-bottom: 20px;
+  padding: 10px 20px; background: var(--card); border-radius: var(--radius);
+  border: 1px solid var(--border); font-size: 13px; font-weight: 500;
+  color: var(--text-secondary); box-shadow: var(--shadow-xs);
+}
+.stats span { font-weight: 700; font-size: 16px; font-family: var(--font-song); }
+.stats .pending-count { color: var(--cta); }
+.stats .done-count { color: var(--priority-low); }
+
+/* ===== Add Bar ===== */
+.add-bar {
+  display: flex; gap: 8px; margin-bottom: 24px; padding: 6px;
+  background: var(--card); border-radius: var(--radius);
+  border: 1px solid var(--border); box-shadow: var(--shadow-xs);
+}
+.add-bar input[type="text"] {
+  flex: 1; padding: 12px 14px; border: none; border-radius: 3px;
+  font-size: 16px; font-family: var(--font-song); background: transparent;
+  outline: none; color: var(--text);
+}
+.add-bar input[type="text"]::placeholder { color: var(--text-muted); }
+.add-bar input[type="text"]:focus-visible { background: #FFFDF5; }
+.add-bar select {
+  padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius);
+  font-size: 13px; font-family: var(--font-sans); background: var(--card);
+  cursor: pointer; outline: none; color: var(--text); transition: border-color var(--transition);
+  appearance: none; -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238B7355' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'%3E%3C/path%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 8px center; padding-right: 28px;
+}
+.add-bar select:focus-visible { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(44,62,80,0.1); }
+.add-bar input[type="time"] {
+  padding: 10px 8px; border: 1px solid var(--border); border-radius: var(--radius);
+  font-size: 13px; font-family: var(--font-sans); background: var(--card);
+  cursor: pointer; outline: none; color: var(--text); transition: border-color var(--transition);
+  width: 105px;
+}
+.add-bar input[type="time"]:focus-visible { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(44,62,80,0.1); }
+.add-bar .time-sep { display: flex; align-items: center; font-size: 13px; color: var(--text-muted); flex-shrink: 0; user-select: none; }
+.add-bar .add-btn {
+  padding: 10px 22px; background: var(--cta); color: #fff; border: none;
+  border-radius: var(--radius); font-family: var(--font-sans); font-size: 14px;
+  font-weight: 600; cursor: pointer; transition: all var(--transition);
+  white-space: nowrap; letter-spacing: 1px;
+}
+.add-bar .add-btn:hover { background: var(--cta-hover); }
+
+/* ===== Section Label ===== */
+.task-section { margin-bottom: 20px; }
+.section-label {
+  font-family: var(--font-song); font-size: 12px; font-weight: 700;
+  letter-spacing: 2px; color: var(--text-secondary);
+  margin-bottom: 10px; padding: 0 0 6px 0;
+  border-bottom: 1px dashed var(--border-dark);
+}
+
+/* ===== Task List ===== */
+.task-list { display: flex; flex-direction: column; gap: 6px; }
+
+.task-item {
+  display: flex; align-items: center; gap: 12px; padding: 12px 14px;
+  border: 1px solid var(--border); border-radius: var(--radius);
+  transition: all var(--transition); position: relative; overflow: hidden;
+  background: var(--card); box-shadow: var(--shadow-xs);
+}
+/* Priority tinted backgrounds — ledger ink washes */
+.task-item.priority-high { background: #FDF0ED; }
+.task-item.priority-medium { background: #FDF8ED; }
+.task-item.priority-low { background: #F2F6EE; }
+
+/* Left border stripe — priority */
+.task-item::before {
+  content: ''; position: absolute; left: 0; top: 4px; bottom: 4px;
+  width: 4px; border-radius: 0 2px 2px 0;
+}
+.task-item.priority-high::before { background: var(--priority-high); }
+.task-item.priority-medium::before { background: var(--priority-medium); }
+.task-item.priority-low::before { background: var(--priority-low); }
+
+/* Hover — border darkens, no float */
+.task-item:hover { border-color: var(--border-dark); box-shadow: var(--shadow); }
+.task-item.completed { background: var(--completed-bg); border-color: var(--border); }
+.task-item.completed::before { background: var(--completed); }
+
+/* ===== Checkbox —— 方角矩形，纸质打勾框 ===== */
+.checkbox {
+  width: 20px; height: 20px; border: 2px solid var(--text-muted); border-radius: 3px;
+  cursor: pointer; flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+  transition: all var(--transition); background: var(--card); position: relative;
+}
+.checkbox::after {
+  content: ''; position: absolute; width: 10px; height: 5px;
+  border-left: 2.5px solid transparent; border-bottom: 2.5px solid transparent;
+  transform: rotate(-45deg) translate(0, -1px); transition: all var(--transition);
+}
+.checkbox:hover { border-color: var(--priority-low); background: var(--priority-low-bg); }
+.task-item.completed .checkbox { border-color: var(--priority-low); background: var(--priority-low); }
+.task-item.completed .checkbox::after { border-color: #fff; }
+
+/* ===== Task Content ===== */
+.task-content { flex: 1; min-width: 0; cursor: pointer; }
+.task-title { font-family: var(--font-song); font-size: 16px; font-weight: 500; word-break: break-word; transition: color var(--transition); }
+.task-item.completed .task-title { text-decoration: line-through; color: var(--strikethrough); }
+.task-meta { font-size: 12px; color: var(--text-secondary); margin-top: 2px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+/* ===== Badges ===== */
+.priority-badge {
+  font-family: var(--font-sans); font-size: 10px; padding: 2px 8px;
+  border-radius: 3px; font-weight: 600; flex-shrink: 0; letter-spacing: 1px;
+}
+.priority-badge.high { background: var(--priority-high-bg); color: var(--priority-high); }
+.priority-badge.medium { background: var(--priority-medium-bg); color: var(--priority-medium); }
+.priority-badge.low { background: var(--priority-low-bg); color: var(--priority-low); }
+
+.cat-badge {
+  display: inline-flex; align-items: center; gap: 3px;
+  font-size: 10px; padding: 2px 8px; border-radius: 3px;
+  font-weight: 600; flex-shrink: 0; letter-spacing: 1px;
+}
+.cat-badge svg { width: 12px; height: 12px; flex-shrink: 0; }
+.cat-badge.cat-study { background: #EEF2FF; color: #4B5EC7; }
+.cat-badge.cat-work { background: #FFFBEB; color: #B8860B; }
+.cat-badge.cat-life { background: #ECFDF5; color: #4A7C5F; }
+.cat-badge.cat-entertainment { background: #FFF7ED; color: #C0642A; }
+.cat-badge.cat-exercise { background: #FEF2F2; color: #B8433F; }
+.cat-badge.cat-other { background: #F8FAFC; color: #64748B; }
+
+.time-badge {
+  font-size: 11px; color: var(--text-secondary); display: flex; align-items: center; gap: 3px;
+  padding: 2px 8px; border-radius: 3px; border: 1px solid var(--border);
+}
+
+/* ===== Delete Button ===== */
+.delete-btn {
+  width: 28px; height: 28px; border: none; background: transparent;
+  color: var(--text-muted); cursor: pointer; border-radius: 3px;
+  font-size: 18px; font-family: var(--font-sans);
+  display: flex; align-items: center; justify-content: center;
+  transition: all var(--transition); flex-shrink: 0; line-height: 1;
+}
+.delete-btn:hover { color: #fff; background: var(--priority-high); }
+
+/* ===== Edit Form ===== */
+.task-edit-input {
+  flex: 1; padding: 8px 12px; border: 1.5px solid var(--accent);
+  border-radius: var(--radius); font-size: 15px; font-family: var(--font-song);
+  outline: none; background: var(--card);
+}
+.edit-time-row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.edit-time-row input[type="time"] {
+  padding: 5px 8px; border: 1px solid var(--border); border-radius: var(--radius);
+  font-size: 13px; font-family: var(--font-sans); background: var(--card); outline: none; width: 100px;
+}
+.edit-time-row input[type="time"]:focus { border-color: var(--accent); }
+.edit-time-row .time-sep { font-size: 12px; color: var(--text-muted); }
+
+/* ===== Empty State ===== */
+.empty-state { text-align: center; padding: 60px 20px; color: var(--text-muted); }
+.empty-state p { font-size: 15px; font-family: var(--font-song); letter-spacing: 1px; }
+
+/* ===== Week View ===== */
+.week-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+.week-day {
+  background: var(--card); border-radius: var(--radius); padding: 10px 6px;
+  box-shadow: var(--shadow-xs); min-height: 120px; cursor: pointer;
+  transition: all var(--transition); border: 1px solid var(--border);
+}
+.week-day:hover { border-color: var(--border-dark); box-shadow: var(--shadow); }
+.week-day.today { border: 2px solid var(--text); background: var(--card-hover); }
+.week-day-header { text-align: center; margin-bottom: 8px; padding-bottom: 6px; border-bottom: 1px dashed var(--border-dark); }
+.week-day-name { font-family: var(--font-sans); font-size: 11px; color: var(--text-secondary); font-weight: 500; }
+.week-day-date { font-family: var(--font-song); font-size: 24px; font-weight: 900; line-height: 1.1; }
+.week-day.today .week-day-date { color: var(--cta); }
+.week-day-tasks { display: flex; flex-direction: column; gap: 3px; }
+.week-task {
+  font-size: 11px; padding: 3px 6px; border-radius: 3px; display: flex;
+  align-items: center; gap: 4px; cursor: pointer; transition: all var(--transition);
+  font-weight: 400; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  font-family: var(--font-song); background: transparent;
+}
+.week-task:hover { background: var(--card-hover); }
+.week-task.done { text-decoration: line-through; opacity: 0.4; }
+.week-task .mini-dot { width: 6px; height: 6px; border-radius: 2px; flex-shrink: 0; }
+.week-task.priority-high .mini-dot { background: var(--priority-high); }
+.week-task.priority-medium .mini-dot { background: var(--priority-medium); }
+.week-task.priority-low .mini-dot { background: var(--priority-low); }
+.week-day-count {
+  font-family: var(--font-song); font-size: 10px; color: var(--text-secondary);
+  text-align: center; margin-top: 8px; font-weight: 600;
+  padding: 4px 0 0; border-top: 1px solid var(--border);
+}
+
+/* ===== Toast ===== */
+.toast {
+  position: fixed; bottom: 32px; left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: var(--text); color: var(--card); padding: 10px 24px;
+  border-radius: var(--radius); font-family: var(--font-sans);
+  font-size: 13px; font-weight: 500; opacity: 0; pointer-events: none;
+  transition: all 0.25s ease; z-index: 100; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  letter-spacing: 1px;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ===== Responsive ===== */
+@media (max-width: 600px) {
+  .app { padding: 20px 12px 40px; }
+  .header h1 { font-size: 22px; }
+  .add-bar { flex-wrap: wrap; padding: 4px; }
+  .add-bar select { flex: 1; }
+  .add-bar .add-btn { width: 100%; }
+  .add-bar input[type="time"] { flex: 1; min-width: 0; width: auto; }
+  .add-bar .time-sep { display: none; }
+  .week-grid { gap: 3px; }
+  .week-day { padding: 6px 3px; min-height: auto; }
+  .week-day-date { font-size: 18px; }
+  .week-task { font-size: 10px; padding: 2px 3px; }
+  .task-item { padding: 10px; gap: 8px; }
+  .stats { flex-wrap: wrap; gap: 12px; justify-content: center; }
+  .edit-time-row { flex-wrap: wrap; }
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <!-- Header -->
+  <div class="header">
+    <h1><span class="dot"></span>日程手账</h1>
+    <div class="header-right">
+      <div class="view-toggle">
+        <button id="dayViewBtn" class="active">日视图</button>
+        <button id="weekViewBtn">周视图</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Date Navigation -->
+  <div class="date-nav">
+    <button id="prevBtn" aria-label="前一天">◀</button>
+    <button class="today-btn" id="todayBtn">今天</button>
+    <span class="date-display" id="dateDisplay"></span>
+    <button id="nextBtn" aria-label="后一天">▶</button>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats" id="stats"></div>
+
+  <!-- Add Bar -->
+  <div class="add-bar">
+    <input type="text" id="taskInput" placeholder="记一笔..." maxlength="200" aria-label="新任务标题">
+    <input type="time" id="startTime" aria-label="开始时间" title="开始时间">
+    <span class="time-sep">—</span>
+    <input type="time" id="endTime" aria-label="结束时间" title="结束时间">
+    <select id="categorySelect" aria-label="分类">
+      <option value="study">学习</option>
+      <option value="work">工作</option>
+      <option value="life" selected>生活</option>
+      <option value="entertainment">娱乐</option>
+      <option value="exercise">运动</option>
+      <option value="other">其他</option>
+    </select>
+    <select id="prioritySelect" aria-label="优先级">
+      <option value="high">高</option>
+      <option value="medium" selected>中</option>
+      <option value="low">低</option>
+    </select>
+    <button class="add-btn" id="addBtn">记 录</button>
+  </div>
+
+  <!-- Main Content -->
+  <div id="mainContent"></div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function() {
+  var STORAGE_KEY = 'schedule_tasks';
+
+  function loadTasks() {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }
+    catch (e) { return []; }
+  }
+  function saveTasks(tasks) { localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks)); }
+
+  var tasks = loadTasks();
+  var currentView = 'day';
+  var currentDate = new Date();
+
+  function todayStr() { return formatDate(new Date()); }
+  function formatDate(d) { return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); }
+
+  var $ = function(id) { return document.getElementById(id); };
+  var mainContent = $('mainContent');
+  var dateDisplay = $('dateDisplay');
+  var statsEl = $('stats');
+  var taskInput = $('taskInput');
+  var prioritySelect = $('prioritySelect');
+  var categorySelect = $('categorySelect');
+  var startTimeEl = $('startTime');
+  var endTimeEl = $('endTime');
+
+  var CATEGORIES = {
+    study:    { name: '学习', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"></path></svg>' },
+    work:     { name: '工作', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"></path></svg>' },
+    life:     { name: '生活', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m3 9 9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>' },
+    entertainment: { name: '娱乐', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"></rect><polyline points="6 12 10 8 14 12 18 8 22 12"></polyline></svg>' },
+    exercise: { name: '运动', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="2"></circle><path d="M10 22l2-7 2 7"></path><path d="M8 10l-4 4 4 4"></path><path d="M16 10l4 4-4 4"></path></svg>' },
+    other:    { name: '其他', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>' }
+  };
+
+  function getWeekRange(date) {
+    var d = new Date(date);
+    var day = d.getDay();
+    var diff = day === 0 ? -6 : 1 - day;
+    var monday = new Date(d);
+    monday.setDate(d.getDate() + diff);
+    monday.setHours(0,0,0,0);
+    var sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+    return { monday: monday, sunday: sunday };
+  }
+
+  function getTasksByDate(dateStr) { return tasks.filter(function(t) { return t.date === dateStr; }); }
+
+  function addTask(title, priority, dateStr, startTime, endTime, category) {
+    var task = {
+      id: crypto.randomUUID(),
+      title: title.trim(),
+      date: dateStr,
+      priority: priority,
+      category: category || 'life',
+      startTime: startTime || '',
+      endTime: endTime || '',
+      note: '',
+      completed: false,
+      completedAt: null,
+      createdAt: new Date().toISOString()
+    };
+    tasks.unshift(task);
+    saveTasks(tasks);
+    return task;
+  }
+
+  function toggleTask(id) {
+    var task = tasks.find(function(t) { return t.id === id; });
+    if (!task) return;
+    task.completed = !task.completed;
+    task.completedAt = task.completed ? new Date().toISOString() : null;
+    saveTasks(tasks);
+  }
+
+  function updateTask(id, updates) {
+    var task = tasks.find(function(t) { return t.id === id; });
+    if (!task) return;
+    Object.assign(task, updates);
+    saveTasks(tasks);
+  }
+
+  function deleteTask(id) {
+    tasks = tasks.filter(function(t) { return t.id !== id; });
+    saveTasks(tasks);
+  }
+
+  function sortTasks(list) {
+    var order = { high: 0, medium: 1, low: 2 };
+    var pending = list.filter(function(t) { return !t.completed; }).sort(function(a, b) {
+      if (order[a.priority] !== order[b.priority]) return order[a.priority] - order[b.priority];
+      if (a.startTime && b.startTime) return a.startTime.localeCompare(b.startTime);
+      if (a.startTime) return -1;
+      if (b.startTime) return 1;
+      return 0;
+    });
+    var done = list.filter(function(t) { return t.completed; }).sort(function(a, b) {
+      return new Date(b.completedAt || 0) - new Date(a.completedAt || 0);
+    });
+    return pending.concat(done);
+  }
+
+  function showToast(msg) {
+    var el = $('toast');
+    el.textContent = msg;
+    el.classList.add('show');
+    clearTimeout(el._timeout);
+    el._timeout = setTimeout(function() { el.classList.remove('show'); }, 1800);
+  }
+
+  function escapeHtml(s) {
+    var d = document.createElement('div');
+    d.textContent = s;
+    return d.innerHTML;
+  }
+
+  /* ---- Day View ---- */
+  function renderDayView() {
+    var dateStr = formatDate(currentDate);
+    var dayTasks = getTasksByDate(dateStr);
+    var sorted = sortTasks(dayTasks);
+    var pending = sorted.filter(function(t) { return !t.completed; });
+    var done = sorted.filter(function(t) { return t.completed; });
+
+    var weekDayNames = ['日','一','二','三','四','五','六'];
+    var d = currentDate;
+    dateDisplay.textContent = d.getFullYear() + '年' + (d.getMonth()+1) + '月' + d.getDate() + '日 星期' + weekDayNames[d.getDay()];
+
+    var isToday = dateStr === todayStr();
+    statsEl.innerHTML = isToday
+      ? '今日待办 <span class="pending-count">' + pending.length + '</span> 项，已了结 <span class="done-count">' + done.length + '</span> 项'
+      : '共 <span class="pending-count">' + dayTasks.length + '</span> 项，<span class="done-count">' + done.length + '</span> 项已了结';
+
+    var html = '';
+    if (sorted.length === 0) {
+      html += '<div class="empty-state"><p>是日无事，记一笔吧</p></div>';
+    } else {
+      html += '<div class="task-section"><div class="section-label">待 办 (' + pending.length + ')</div><div class="task-list">';
+      pending.forEach(function(t) { html += renderTaskItem(t); });
+      html += '</div></div>';
+      if (done.length > 0) {
+        html += '<div class="task-section"><div class="section-label">已 了 结 (' + done.length + ')</div><div class="task-list">';
+        done.forEach(function(t) { html += renderTaskItem(t); });
+        html += '</div></div>';
+      }
+    }
+    mainContent.innerHTML = html;
+    bindTaskEvents();
+  }
+
+  function renderTaskItem(t) {
+    var cat = t.category || 'life';
+    var priClass = 'priority-' + t.priority;
+    var catClass = 'cat-' + cat;
+    var cls = t.completed ? 'task-item completed ' + priClass : 'task-item ' + priClass;
+    var priorityLabel = { high: '高', medium: '中', low: '低' }[t.priority];
+    var catInfo = CATEGORIES[cat] || CATEGORIES['life'];
+    var doneTime = t.completedAt ? ' ✓ ' + new Date(t.completedAt).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }) : '';
+    var timeHtml = '';
+    if (t.startTime) {
+      var timeText = t.startTime;
+      if (t.endTime) timeText += ' ~ ' + t.endTime;
+      timeHtml = '<span class="time-badge">' + timeText + '</span>';
+    }
+    return '<div class="' + cls + '" data-id="' + t.id + '">' +
+      '<div class="checkbox" data-action="toggle" role="checkbox" aria-checked="' + (t.completed ? 'true' : 'false') + '" tabindex="0" aria-label="切换完成状态"></div>' +
+      '<div class="task-content" data-action="edit" tabindex="0" aria-label="编辑: ' + escapeHtml(t.title) + '">' +
+        '<div class="task-title">' + escapeHtml(t.title) + '</div>' +
+        '<div class="task-meta">' +
+          '<span class="cat-badge ' + catClass + '">' + catInfo.icon + catInfo.name + '</span>' +
+          '<span class="priority-badge ' + t.priority + '">' + priorityLabel + '</span>' +
+          timeHtml +
+          (doneTime ? '<span>' + doneTime + '</span>' : '') +
+        '</div>' +
+      '</div>' +
+      '<button class="delete-btn" data-action="delete" aria-label="删除" title="删除">&times;</button>' +
+    '</div>';
+  }
+
+  function bindTaskEvents() {
+    mainContent.querySelectorAll('[data-action]').forEach(function(el) {
+      el.addEventListener('click', function(e) {
+        e.stopPropagation();
+        var taskEl = this.closest('.task-item');
+        var id = taskEl.dataset.id;
+        var action = this.dataset.action;
+
+        if (action === 'toggle') {
+          toggleTask(id);
+          renderDayView();
+        } else if (action === 'delete') {
+          if (confirm('确定要删除吗？')) {
+            deleteTask(id);
+            renderDayView();
+            showToast('已删除');
+          }
+        } else if (action === 'edit') {
+          startEdit(taskEl, id);
+        }
+      });
+      if (el.dataset.action === 'toggle') {
+        el.addEventListener('keydown', function(e) {
+          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this.click(); }
+        });
+      }
+    });
+  }
+
+  function startEdit(taskEl, id) {
+    var task = tasks.find(function(t) { return t.id === id; });
+    if (!task) return;
+
+    var contentEl = taskEl.querySelector('.task-content');
+    var catOpts = '';
+    for (var key in CATEGORIES) {
+      catOpts += '<option value="' + key + '"' + ((task.category||'life')===key?' selected':'') + '>' + CATEGORIES[key].name + '</option>';
+    }
+    var form = document.createElement('form');
+    form.style.cssText = 'flex:1;display:flex;flex-direction:column;gap:6px;';
+    form.innerHTML = '<input type="text" class="task-edit-input" value="' + escapeHtml(task.title) + '" maxlength="200" aria-label="编辑标题">' +
+      '<div class="edit-time-row">' +
+        '<input type="time" value="' + (task.startTime || '') + '" aria-label="开始时间">' +
+        '<span class="time-sep">—</span>' +
+        '<input type="time" value="' + (task.endTime || '') + '" aria-label="结束时间">' +
+        '<select style="font-size:12px;padding:5px 8px;border:1px solid #D4C4AE;border-radius:3px;font-family:inherit;background:#fff;cursor:pointer;" aria-label="分类">' + catOpts + '</select>' +
+        '<select style="font-size:12px;padding:5px 8px;border:1px solid #D4C4AE;border-radius:3px;font-family:inherit;background:#fff;cursor:pointer;" aria-label="优先级">' +
+          '<option value="high"' + (task.priority==='high'?' selected':'') + '>高</option>' +
+          '<option value="medium"' + (task.priority==='medium'?' selected':'') + '>中</option>' +
+          '<option value="low"' + (task.priority==='low'?' selected':'') + '>低</option>' +
+        '</select>' +
+        '<button type="submit" style="padding:5px 12px;background:#3D2C2C;color:#fff;border:none;border-radius:3px;cursor:pointer;font-size:12px;font-weight:600;font-family:inherit;">保存</button>' +
+        '<button type="button" class="cancel-edit" style="padding:5px 12px;background:transparent;border:1px solid #D4C4AE;border-radius:3px;cursor:pointer;font-size:12px;color:#8B7355;font-family:inherit;">取消</button>' +
+      '</div>';
+
+    contentEl.replaceWith(form);
+    var input = form.querySelector('input');
+    input.focus();
+    input.select();
+
+    form.addEventListener('submit', function(e) {
+      e.preventDefault();
+      var newTitle = input.value.trim();
+      var selects = form.querySelectorAll('select');
+      var newCategory = selects[0].value;
+      var newPriority = selects[1].value;
+      var timeInputs = form.querySelectorAll('input[type="time"]');
+      var newStart = timeInputs[0].value;
+      var newEnd = timeInputs[1].value;
+      if (newStart && newEnd && newStart >= newEnd) { showToast('结束时间须晚于开始时间'); return; }
+      if (newTitle) {
+        updateTask(id, { title: newTitle, category: newCategory, priority: newPriority, startTime: newStart, endTime: newEnd });
+        renderDayView();
+      }
+    });
+
+    form.querySelector('.cancel-edit').addEventListener('click', function(e) { e.stopPropagation(); renderDayView(); });
+    input.addEventListener('blur', function() {
+      setTimeout(function() { if (document.contains(form)) renderDayView(); }, 150);
+    });
+  }
+
+  /* ---- Week View ---- */
+  function renderWeekView() {
+    var range = getWeekRange(currentDate);
+    var monday = range.monday, sunday = range.sunday;
+    dateDisplay.textContent = formatWeekDisplay(monday, sunday);
+
+    var todayS = todayStr();
+    var days = [];
+    for (var i = 0; i < 7; i++) {
+      var d = new Date(monday);
+      d.setDate(monday.getDate() + i);
+      var ds = formatDate(d);
+      var dayTasks = getTasksByDate(ds);
+      days.push({
+        date: d, dateStr: ds,
+        dayName: ['一','二','三','四','五','六','日'][i],
+        tasks: dayTasks,
+        done: dayTasks.filter(function(t) { return t.completed; }).length,
+        total: dayTasks.length,
+        isToday: ds === todayS
+      });
+    }
+
+    var totalPending = days.reduce(function(s, d) { return s + d.total - d.done; }, 0);
+    var totalDone = days.reduce(function(s, d) { return s + d.done; }, 0);
+    statsEl.innerHTML = '本周待办 <span class="pending-count">' + totalPending + '</span> 项，已了结 <span class="done-count">' + totalDone + '</span> 项';
+
+    var html = '<div class="week-grid">';
+    days.forEach(function(d) {
+      var sorted = sortTasks(d.tasks);
+      html += '<div class="week-day' + (d.isToday ? ' today' : '') + '" data-date="' + d.dateStr + '" tabindex="0">';
+      html += '<div class="week-day-header"><div class="week-day-name">周' + d.dayName + '</div><div class="week-day-date">' + d.date.getDate() + '</div></div>';
+      html += '<div class="week-day-tasks">';
+      sorted.forEach(function(t) {
+        var weekTimePrefix = t.startTime ? t.startTime + ' ' : '';
+        html += '<div class="week-task priority-' + t.priority + (t.completed ? ' done' : '') + '" data-id="' + t.id + '"><span class="mini-dot"></span>' + weekTimePrefix + escapeHtml(t.title) + '</div>';
+      });
+      html += '</div>';
+      if (d.total > 0) html += '<div class="week-day-count">' + d.done + '/' + d.total + '</div>';
+      html += '</div>';
+    });
+    html += '</div>';
+
+    mainContent.innerHTML = html;
+
+    mainContent.querySelectorAll('.week-day').forEach(function(el) {
+      el.addEventListener('click', function(e) {
+        if (e.target.closest('.week-task')) return;
+        currentDate = new Date(this.dataset.date + 'T00:00:00');
+        switchToDayView();
+      });
+    });
+    mainContent.querySelectorAll('.week-task').forEach(function(el) {
+      el.addEventListener('click', function(e) {
+        e.stopPropagation();
+        if (this.dataset.id) { toggleTask(this.dataset.id); renderWeekView(); }
+      });
+    });
+  }
+
+  function formatWeekDisplay(monday, sunday) {
+    var fmt = function(d) { return (d.getMonth()+1) + '/' + d.getDate(); };
+    return fmt(monday) + ' — ' + fmt(sunday);
+  }
+
+  function switchToDayView() {
+    currentView = 'day';
+    $('dayViewBtn').classList.add('active');
+    $('weekViewBtn').classList.remove('active');
+    renderDayView();
+  }
+  function switchToWeekView() {
+    currentView = 'week';
+    $('dayViewBtn').classList.remove('active');
+    $('weekViewBtn').classList.add('active');
+    renderWeekView();
+  }
+  function goPrev() {
+    if (currentView === 'day') { currentDate.setDate(currentDate.getDate() - 1); renderDayView(); }
+    else { currentDate.setDate(currentDate.getDate() - 7); renderWeekView(); }
+  }
+  function goNext() {
+    if (currentView === 'day') { currentDate.setDate(currentDate.getDate() + 1); renderDayView(); }
+    else { currentDate.setDate(currentDate.getDate() + 7); renderWeekView(); }
+  }
+  function goToday() {
+    currentDate = new Date();
+    if (currentView === 'day') renderDayView(); else renderWeekView();
+  }
+
+  $('dayViewBtn').addEventListener('click', switchToDayView);
+  $('weekViewBtn').addEventListener('click', switchToWeekView);
+  $('prevBtn').addEventListener('click', goPrev);
+  $('nextBtn').addEventListener('click', goNext);
+  $('todayBtn').addEventListener('click', goToday);
+
+  $('addBtn').addEventListener('click', function() {
+    var title = taskInput.value.trim();
+    if (!title) return;
+    var priority = prioritySelect.value;
+    var category = categorySelect.value;
+    var startTime = startTimeEl.value;
+    var endTime = endTimeEl.value;
+    if (startTime && endTime && startTime >= endTime) { showToast('结束时间须晚于开始时间'); return; }
+    var dateStr = currentView === 'day' ? formatDate(currentDate) : todayStr();
+    addTask(title, priority, dateStr, startTime, endTime, category);
+    taskInput.value = '';
+    startTimeEl.value = '';
+    endTimeEl.value = '';
+    taskInput.focus();
+    if (currentView === 'day') { renderDayView(); }
+    else { goToday(); switchToDayView(); }
+    showToast('已记录');
+  });
+
+  taskInput.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') { e.preventDefault(); $('addBtn').click(); }
+  });
+
+  renderDayView();
+})();
+</script>
+</body>
+</html>
