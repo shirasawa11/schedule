@@ -193,24 +193,43 @@ body {
   transition: all var(--transition); position: relative; overflow: hidden;
   background: var(--card); box-shadow: var(--shadow-xs);
 }
-/* Priority tinted backgrounds — ledger ink washes */
-.task-item.priority-high { background: #FDF0ED; }
-.task-item.priority-medium { background: #FDF8ED; }
-.task-item.priority-low { background: #F2F6EE; }
 
-/* Left border stripe — priority */
+/* Category tinted backgrounds */
+.task-item.cat-study { background: #EEF2FF; }
+.task-item.cat-work { background: #FFFBF0; }
+.task-item.cat-life { background: #EDF8F3; }
+.task-item.cat-entertainment { background: #FFF7F0; }
+.task-item.cat-exercise { background: #FEF2F2; }
+.task-item.cat-other { background: #F8FAFC; }
+
+/* Left border stripe — category */
 .task-item::before {
   content: ''; position: absolute; left: 0; top: 4px; bottom: 4px;
   width: 4px; border-radius: 0 2px 2px 0;
 }
-.task-item.priority-high::before { background: var(--priority-high); }
-.task-item.priority-medium::before { background: var(--priority-medium); }
-.task-item.priority-low::before { background: var(--priority-low); }
+.task-item.cat-study::before { background: #6366F1; }
+.task-item.cat-work::before { background: #D97706; }
+.task-item.cat-life::before { background: #059669; }
+.task-item.cat-entertainment::before { background: #EA580C; }
+.task-item.cat-exercise::before { background: #DC2626; }
+.task-item.cat-other::before { background: #94A3B8; }
 
 /* Hover — border darkens, no float */
 .task-item:hover { border-color: var(--border-dark); box-shadow: var(--shadow); }
-.task-item.completed { background: var(--completed-bg); border-color: var(--border); }
+.task-item.completed { background: var(--completed-bg) !important; border-color: var(--border); }
 .task-item.completed::before { background: var(--completed); }
+
+/* Priority Section */
+.priority-section { margin-bottom: 16px; }
+.priority-header {
+  font-family: var(--font-sans); font-size: 12px; font-weight: 700;
+  padding: 5px 10px; border-radius: var(--radius) var(--radius) 0 0;
+  letter-spacing: 1.5px; display: inline-block; margin-bottom: 6px;
+}
+.priority-header.priority-high { background: #FDE8E8; color: #C0392B; }
+.priority-header.priority-medium { background: #FDF3DF; color: #B8860B; }
+.priority-header.priority-low { background: #EEF5EA; color: #5D7A4A; }
+.priority-header.completed-header { background: #F5F1EB; color: #8B7355; }
 
 /* ===== Checkbox —— 方角矩形，纸质打勾框 ===== */
 .checkbox {
@@ -234,17 +253,7 @@ body {
 .task-meta { font-size: 12px; color: var(--text-secondary); margin-top: 2px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 
 /* ===== Badges ===== */
-/* Priority — filled solid badge, highly visible */
-.priority-badge {
-  font-family: var(--font-sans); font-size: 10px; padding: 3px 10px;
-  border-radius: 3px; font-weight: 700; flex-shrink: 0; letter-spacing: 1px;
-  color: #fff;
-}
-.priority-badge.high { background: var(--priority-high); }
-.priority-badge.medium { background: var(--priority-medium); }
-.priority-badge.low { background: var(--priority-low); }
-
-/* Category — outlined badge, distinct colors per type */
+/* Category — outlined badge */
 .cat-badge {
   display: inline-flex; align-items: center; gap: 3px;
   font-size: 10px; padding: 2px 8px; border-radius: 3px;
@@ -315,9 +324,12 @@ body {
 .week-task:hover { background: var(--card-hover); }
 .week-task.done { text-decoration: line-through; opacity: 0.4; }
 .week-task .mini-dot { width: 6px; height: 6px; border-radius: 2px; flex-shrink: 0; }
-.week-task.priority-high .mini-dot { background: var(--priority-high); }
-.week-task.priority-medium .mini-dot { background: var(--priority-medium); }
-.week-task.priority-low .mini-dot { background: var(--priority-low); }
+.week-task.cat-study .mini-dot { background: #6366F1; }
+.week-task.cat-work .mini-dot { background: #D97706; }
+.week-task.cat-life .mini-dot { background: #059669; }
+.week-task.cat-entertainment .mini-dot { background: #EA580C; }
+.week-task.cat-exercise .mini-dot { background: #DC2626; }
+.week-task.cat-other .mini-dot { background: #94A3B8; }
 .week-day-count {
   font-family: var(--font-song); font-size: 10px; color: var(--text-secondary);
   text-align: center; margin-top: 8px; font-weight: 600;
@@ -513,19 +525,31 @@ body {
     saveTasks(tasks);
   }
 
+  var PRIORITY_ORDER = { high: 0, medium: 1, low: 2 };
+  var PRIORITY_LABEL = { high: '高', medium: '中', low: '低' };
+
   function sortTasks(list) {
-    var order = { high: 0, medium: 1, low: 2 };
-    var pending = list.filter(function(t) { return !t.completed; }).sort(function(a, b) {
-      if (order[a.priority] !== order[b.priority]) return order[a.priority] - order[b.priority];
-      if (a.startTime && b.startTime) return a.startTime.localeCompare(b.startTime);
-      if (a.startTime) return -1;
-      if (b.startTime) return 1;
-      return 0;
+    var pending = list.filter(function(t) { return !t.completed; });
+    // Group by priority
+    var groups = { high: [], medium: [], low: [] };
+    pending.forEach(function(t) { groups[t.priority].push(t); });
+    // Sort each group: by endTime (earliest first), no endTime at end, then by startTime
+    ['high','medium','low'].forEach(function(pri) {
+      groups[pri].sort(function(a, b) {
+        if (a.endTime && b.endTime) return a.endTime.localeCompare(b.endTime);
+        if (a.endTime && !b.endTime) return -1;
+        if (!a.endTime && b.endTime) return 1;
+        if (a.startTime && b.startTime) return a.startTime.localeCompare(b.startTime);
+        if (a.startTime) return -1;
+        if (b.startTime) return 1;
+        return 0;
+      });
     });
+    var result = groups['high'].concat(groups['medium']).concat(groups['low']);
     var done = list.filter(function(t) { return t.completed; }).sort(function(a, b) {
       return new Date(b.completedAt || 0) - new Date(a.completedAt || 0);
     });
-    return pending.concat(done);
+    return result.concat(done);
   }
 
   function showToast(msg) {
@@ -563,11 +587,23 @@ body {
     if (sorted.length === 0) {
       html += '<div class="empty-state"><p>是日无事，记一笔吧</p></div>';
     } else {
-      html += '<div class="task-section"><div class="section-label">待 办 (' + pending.length + ')</div><div class="task-list">';
-      pending.forEach(function(t) { html += renderTaskItem(t); });
-      html += '</div></div>';
+      // Group pending by priority
+      var groups = { high: [], medium: [], low: [] };
+      pending.forEach(function(t) { groups[t.priority].push(t); });
+      var priOrder = ['high', 'medium', 'low'];
+      var priIcons = { high: '■', medium: '◆', low: '●' };
+      priOrder.forEach(function(pri) {
+        if (groups[pri].length === 0) return;
+        html += '<div class="priority-section">';
+        html += '<div class="priority-header priority-' + pri + '">' + priIcons[pri] + ' ' + PRIORITY_LABEL[pri] + '优先级 · ' + groups[pri].length + '项</div>';
+        html += '<div class="task-list">';
+        groups[pri].forEach(function(t) { html += renderTaskItem(t); });
+        html += '</div></div>';
+      });
       if (done.length > 0) {
-        html += '<div class="task-section"><div class="section-label">已 了 结 (' + done.length + ')</div><div class="task-list">';
+        html += '<div class="priority-section">';
+        html += '<div class="priority-header completed-header">✓ 已 了 结 · ' + done.length + '项</div>';
+        html += '<div class="task-list">';
         done.forEach(function(t) { html += renderTaskItem(t); });
         html += '</div></div>';
       }
@@ -578,16 +614,13 @@ body {
 
   function renderTaskItem(t) {
     var cat = t.category || 'life';
-    var priClass = 'priority-' + t.priority;
     var catClass = 'cat-' + cat;
-    var cls = t.completed ? 'task-item completed ' + priClass : 'task-item ' + priClass;
-    var priorityLabel = { high: '高', medium: '中', low: '低' }[t.priority];
+    var cls = t.completed ? 'task-item completed ' + catClass : 'task-item ' + catClass;
     var catInfo = CATEGORIES[cat] || CATEGORIES['life'];
     var doneTime = t.completedAt ? ' ✓ ' + new Date(t.completedAt).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }) : '';
     var timeHtml = '';
-    if (t.startTime) {
-      var timeText = t.startTime;
-      if (t.endTime) timeText += ' ~ ' + t.endTime;
+    if (t.startTime || t.endTime) {
+      var timeText = (t.startTime || '') + (t.endTime ? ' ~ ' + t.endTime : '');
       timeHtml = '<span class="time-badge">' + timeText + '</span>';
     }
     return '<div class="' + cls + '" data-id="' + t.id + '">' +
@@ -596,7 +629,6 @@ body {
         '<div class="task-title">' + escapeHtml(t.title) + '</div>' +
         '<div class="task-meta">' +
           '<span class="cat-badge ' + catClass + '">' + catInfo.icon + catInfo.name + '</span>' +
-          '<span class="priority-badge ' + t.priority + '">' + priorityLabel + '</span>' +
           timeHtml +
           (doneTime ? '<span>' + doneTime + '</span>' : '') +
         '</div>' +
@@ -736,7 +768,7 @@ body {
       html += '<div class="week-day-tasks">';
       sorted.forEach(function(t) {
         var weekTimePrefix = t.startTime ? t.startTime + ' ' : '';
-        html += '<div class="week-task priority-' + t.priority + (t.completed ? ' done' : '') + '" data-id="' + t.id + '"><span class="mini-dot"></span>' + weekTimePrefix + escapeHtml(t.title) + '</div>';
+        html += '<div class="week-task cat-' + (t.category || 'life') + (t.completed ? ' done' : '') + '" data-id="' + t.id + '"><span class="mini-dot"></span>' + weekTimePrefix + escapeHtml(t.title) + '</div>';
       });
       html += '</div>';
       if (d.total > 0) html += '<div class="week-day-count">' + d.done + '/' + d.total + '</div>';
