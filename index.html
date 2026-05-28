@@ -124,39 +124,54 @@ body {
 
 /* ===== Add Bar ===== */
 .add-bar {
-  display: flex; gap: 8px; margin-bottom: 24px; padding: 6px;
+  margin-bottom: 24px; padding: 10px 12px;
   background: var(--card); border-radius: var(--radius);
   border: 1px solid var(--border); box-shadow: var(--shadow-xs);
+  display: flex; flex-direction: column; gap: 8px;
+}
+.add-bar-row {
+  display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
 }
 .add-bar input[type="text"] {
-  flex: 1; padding: 12px 14px; border: none; border-radius: 3px;
+  flex: 1; padding: 10px 0; border: none; border-radius: 0;
   font-size: 16px; font-family: var(--font-song); background: transparent;
   outline: none; color: var(--text);
+  border-bottom: 1px dashed var(--border-dark);
 }
 .add-bar input[type="text"]::placeholder { color: var(--text-muted); }
-.add-bar input[type="text"]:focus-visible { background: #FFFDF5; }
+.add-bar input[type="text"]:focus-visible { border-bottom-color: var(--text); }
+
+/* Field label */
+.field-label {
+  font-family: var(--font-sans); font-size: 11px; color: var(--text-muted);
+  font-weight: 500; letter-spacing: 1px; white-space: nowrap; user-select: none;
+}
+.field-group {
+  display: flex; align-items: center; gap: 5px;
+  border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 5px 8px; background: #FFFDF7;
+}
+.field-group .field-label { font-size: 10px; }
+
 .add-bar select {
-  padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius);
-  font-size: 13px; font-family: var(--font-sans); background: var(--card);
-  cursor: pointer; outline: none; color: var(--text); transition: border-color var(--transition);
+  padding: 5px 4px; border: none; border-radius: 0;
+  font-size: 13px; font-family: var(--font-sans); background: transparent;
+  cursor: pointer; outline: none; color: var(--text);
   appearance: none; -webkit-appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238B7355' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'%3E%3C/path%3E%3C/svg%3E");
-  background-repeat: no-repeat; background-position: right 8px center; padding-right: 28px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%238B7355' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'%3E%3C/path%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 0 center; padding-right: 14px;
 }
-.add-bar select:focus-visible { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(44,62,80,0.1); }
 .add-bar input[type="time"] {
-  padding: 10px 8px; border: 1px solid var(--border); border-radius: var(--radius);
-  font-size: 13px; font-family: var(--font-sans); background: var(--card);
-  cursor: pointer; outline: none; color: var(--text); transition: border-color var(--transition);
-  width: 105px;
+  padding: 5px 2px; border: none; border-radius: 0;
+  font-size: 13px; font-family: var(--font-sans); background: transparent;
+  cursor: pointer; outline: none; color: var(--text); width: 90px;
 }
-.add-bar input[type="time"]:focus-visible { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(44,62,80,0.1); }
-.add-bar .time-sep { display: flex; align-items: center; font-size: 13px; color: var(--text-muted); flex-shrink: 0; user-select: none; }
+.add-bar .time-sep { font-size: 12px; color: var(--text-muted); flex-shrink: 0; user-select: none; margin: 0 2px; }
 .add-bar .add-btn {
-  padding: 10px 22px; background: var(--cta); color: #fff; border: none;
-  border-radius: var(--radius); font-family: var(--font-sans); font-size: 14px;
+  padding: 8px 20px; background: var(--cta); color: #fff; border: none;
+  border-radius: var(--radius); font-family: var(--font-sans); font-size: 13px;
   font-weight: 600; cursor: pointer; transition: all var(--transition);
-  white-space: nowrap; letter-spacing: 1px;
+  white-space: nowrap; letter-spacing: 2px; margin-left: auto;
 }
 .add-bar .add-btn:hover { background: var(--cta-hover); }
 
@@ -321,11 +336,13 @@ body {
 @media (max-width: 600px) {
   .app { padding: 20px 12px 40px; }
   .header h1 { font-size: 22px; }
-  .add-bar { flex-wrap: wrap; padding: 4px; }
-  .add-bar select { flex: 1; }
-  .add-bar .add-btn { width: 100%; }
+  .add-bar { padding: 8px; }
+  .add-bar-row { flex-wrap: wrap; }
+  .field-group { flex: 1; min-width: 0; }
   .add-bar input[type="time"] { flex: 1; min-width: 0; width: auto; }
-  .add-bar .time-sep { display: none; }
+  .add-bar .time-sep { margin: 0 1px; }
+  .add-bar .add-btn { width: 100%; margin-left: 0; }
+  .field-label { font-size: 10px; }
   .week-grid { gap: 3px; }
   .week-day { padding: 6px 3px; min-height: auto; }
   .week-day-date { font-size: 18px; }
@@ -363,24 +380,37 @@ body {
 
   <!-- Add Bar -->
   <div class="add-bar">
-    <input type="text" id="taskInput" placeholder="记一笔..." maxlength="200" aria-label="新任务标题">
-    <input type="time" id="startTime" aria-label="开始时间" title="开始时间">
-    <span class="time-sep">—</span>
-    <input type="time" id="endTime" aria-label="结束时间" title="结束时间">
-    <select id="categorySelect" aria-label="分类">
-      <option value="study">学习</option>
-      <option value="work">工作</option>
-      <option value="life" selected>生活</option>
-      <option value="entertainment">娱乐</option>
-      <option value="exercise">运动</option>
-      <option value="other">其他</option>
-    </select>
-    <select id="prioritySelect" aria-label="优先级">
-      <option value="high">高</option>
-      <option value="medium" selected>中</option>
-      <option value="low">低</option>
-    </select>
-    <button class="add-btn" id="addBtn">记 录</button>
+    <div class="add-bar-row">
+      <input type="text" id="taskInput" placeholder="记一笔..." maxlength="200" aria-label="新任务标题">
+    </div>
+    <div class="add-bar-row">
+      <span class="field-label">时间</span>
+      <div class="field-group">
+        <input type="time" id="startTime" aria-label="开始时间">
+        <span class="time-sep">—</span>
+        <input type="time" id="endTime" aria-label="结束时间">
+      </div>
+      <span class="field-label">分类</span>
+      <div class="field-group">
+        <select id="categorySelect" aria-label="分类">
+          <option value="study">学习</option>
+          <option value="work">工作</option>
+          <option value="life" selected>生活</option>
+          <option value="entertainment">娱乐</option>
+          <option value="exercise">运动</option>
+          <option value="other">其他</option>
+        </select>
+      </div>
+      <span class="field-label">优先级</span>
+      <div class="field-group">
+        <select id="prioritySelect" aria-label="优先级">
+          <option value="high">高</option>
+          <option value="medium" selected>中</option>
+          <option value="low">低</option>
+        </select>
+      </div>
+      <button class="add-btn" id="addBtn">记 录</button>
+    </div>
   </div>
 
   <!-- Main Content -->
