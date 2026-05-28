@@ -234,26 +234,30 @@ body {
 .task-meta { font-size: 12px; color: var(--text-secondary); margin-top: 2px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 
 /* ===== Badges ===== */
+/* Priority — filled solid badge, highly visible */
 .priority-badge {
-  font-family: var(--font-sans); font-size: 10px; padding: 2px 8px;
-  border-radius: 3px; font-weight: 600; flex-shrink: 0; letter-spacing: 1px;
+  font-family: var(--font-sans); font-size: 10px; padding: 3px 10px;
+  border-radius: 3px; font-weight: 700; flex-shrink: 0; letter-spacing: 1px;
+  color: #fff;
 }
-.priority-badge.high { background: var(--priority-high-bg); color: var(--priority-high); }
-.priority-badge.medium { background: var(--priority-medium-bg); color: var(--priority-medium); }
-.priority-badge.low { background: var(--priority-low-bg); color: var(--priority-low); }
+.priority-badge.high { background: var(--priority-high); }
+.priority-badge.medium { background: var(--priority-medium); }
+.priority-badge.low { background: var(--priority-low); }
 
+/* Category — outlined badge, distinct colors per type */
 .cat-badge {
   display: inline-flex; align-items: center; gap: 3px;
   font-size: 10px; padding: 2px 8px; border-radius: 3px;
   font-weight: 600; flex-shrink: 0; letter-spacing: 1px;
+  background: transparent; border: 1.5px solid;
 }
 .cat-badge svg { width: 12px; height: 12px; flex-shrink: 0; }
-.cat-badge.cat-study { background: #EEF2FF; color: #4B5EC7; }
-.cat-badge.cat-work { background: #FFFBEB; color: #B8860B; }
-.cat-badge.cat-life { background: #ECFDF5; color: #4A7C5F; }
-.cat-badge.cat-entertainment { background: #FFF7ED; color: #C0642A; }
-.cat-badge.cat-exercise { background: #FEF2F2; color: #B8433F; }
-.cat-badge.cat-other { background: #F8FAFC; color: #64748B; }
+.cat-badge.cat-study { border-color: #6366F1; color: #6366F1; }
+.cat-badge.cat-work { border-color: #D97706; color: #D97706; }
+.cat-badge.cat-life { border-color: #059669; color: #059669; }
+.cat-badge.cat-entertainment { border-color: #EA580C; color: #EA580C; }
+.cat-badge.cat-exercise { border-color: #DC2626; color: #DC2626; }
+.cat-badge.cat-other { border-color: #94A3B8; color: #94A3B8; }
 
 .time-badge {
   font-size: 11px; color: var(--text-secondary); display: flex; align-items: center; gap: 3px;
