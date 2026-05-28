@@ -648,8 +648,22 @@ body {
     });
 
     form.querySelector('.cancel-edit').addEventListener('click', function(e) { e.stopPropagation(); renderDayView(); });
-    input.addEventListener('blur', function() {
-      setTimeout(function() { if (document.contains(form)) renderDayView(); }, 150);
+
+    // click outside form to close
+    setTimeout(function() {
+      document.addEventListener('click', function closeHandler(e) {
+        if (!form.contains(e.target) && document.contains(form)) {
+          document.removeEventListener('click', closeHandler);
+          renderDayView();
+        }
+      });
+    }, 0);
+
+    // Enter key on form inputs submits
+    form.querySelectorAll('input, select').forEach(function(el) {
+      el.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') { e.preventDefault(); renderDayView(); }
+      });
     });
   }
 
